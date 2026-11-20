@@ -1,0 +1,73 @@
+services:
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: schemeguide
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: catalog_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schemeguide -d catalog_db"]
+      interval: 5s
+      retries: 5
+
+  catalog:
+    build:
+      context: ../services/catalog
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://schemeguide:devpassword@db:5432/catalog_db
+      SECRET_KEY: dev-secret-key-change-in-production
+      DEBUG: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8001"
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn catalog_service.wsgi:application --bind 0.0.0.0:8001"
+
+  eligibility:
+    build:
+      context: ../services/eligibility
+      dockerfile: Dockerfile
+    environment:
+      CATALOG_SERVICE_URL: http://catalog:8001
+    depends_on:
+      - catalog
+    expose:
+      - "8002"
+    command: uvicorn main:app --host 0.0.0.0 --port 8002
+
+  feedback:
+    build:
+      context: ../services/feedback
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://schemeguide:devpassword@db:5432/feedback_db
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8004"
+    command: uvicorn main:app --host 0.0.0.0 --port 8004
+
+  gateway:
+    build:
+      context: ../gateway
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - catalog
+      - eligibility
+      - feedback
+
+volumes:
+  postgres_data:

@@ -1,0 +1,4 @@
+CREATE DATABASE ai_db;
+CREATE DATABASE feedback_db;
+GRANT ALL PRIVILEGES ON DATABASE ai_db TO schemeguide;
+GRANT ALL PRIVILEGES ON DATABASE feedback_db TO schemeguide;
