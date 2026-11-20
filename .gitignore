@@ -12,6 +12,7 @@ env/
 
 # Django
 *.sqlite3
+*.db
 media/
 
 # Node
