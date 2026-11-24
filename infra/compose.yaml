@@ -2,17 +2,15 @@ services:
 
   db:
     image: postgres:16
-    environment:
-      POSTGRES_USER: schemeguide
-      POSTGRES_PASSWORD: devpassword
-      POSTGRES_DB: catalog_db
+    env_file:
+      - ../.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U schemeguide -d catalog_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       retries: 5
 
@@ -21,9 +19,9 @@ services:
       context: ../services/catalog
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://schemeguide:devpassword@db:5432/catalog_db
-      SECRET_KEY: dev-secret-key-change-in-production
-      DEBUG: "true"
+      DATABASE_URL: ${CATALOG_DATABASE_URL}
+      SECRET_KEY: ${CATALOG_SECRET_KEY}
+      DEBUG: ${CATALOG_DEBUG}
     depends_on:
       db:
         condition: service_healthy
@@ -31,6 +29,7 @@ services:
       - "8001"
     command: >
       sh -c "python manage.py migrate &&
+             python manage.py loaddata fixtures/sample_schemes.json || true &&
              python manage.py collectstatic --noinput &&
              gunicorn catalog_service.wsgi:application --bind 0.0.0.0:8001"
 
@@ -38,8 +37,8 @@ services:
     build:
       context: ../services/eligibility
       dockerfile: Dockerfile
-    environment:
-      CATALOG_SERVICE_URL: http://catalog:8001
+    env_file:
+      - ../.env
     depends_on:
       - catalog
     expose:
@@ -51,13 +50,34 @@ services:
       context: ../services/feedback
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://schemeguide:devpassword@db:5432/feedback_db
+      DATABASE_URL: ${FEEDBACK_DATABASE_URL}
     depends_on:
       db:
         condition: service_healthy
     expose:
       - "8004"
     command: uvicorn main:app --host 0.0.0.0 --port 8004
+
+  assistant:
+    build:
+      context: ../services/assistant
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    depends_on:
+      - catalog
+    expose:
+      - "8003"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    expose:
+      - "80"
 
   gateway:
     build:
@@ -69,6 +89,8 @@ services:
       - catalog
       - eligibility
       - feedback
+      - assistant
+      - frontend
 
 volumes:
   postgres_data:

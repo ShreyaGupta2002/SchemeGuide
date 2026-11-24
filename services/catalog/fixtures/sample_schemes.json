@@ -1,0 +1,319 @@
+[
+  {
+    "model": "schemes.scheme",
+    "pk": 1,
+    "fields": {
+      "name": "PM Scholarship Scheme for Central Armed Police Forces",
+      "department": "Ministry of Home Affairs",
+      "jurisdiction": "central",
+      "state": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "schemes.scheme",
+    "pk": 2,
+    "fields": {
+      "name": "Post Matric Scholarship for Scheduled Caste Students",
+      "department": "Ministry of Social Justice and Empowerment",
+      "jurisdiction": "central",
+      "state": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "schemes.scheme",
+    "pk": 3,
+    "fields": {
+      "name": "Central Sector Scheme of Scholarships for College and University Students",
+      "department": "Ministry of Education",
+      "jurisdiction": "central",
+      "state": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+
+  {
+    "model": "schemes.schemeversion",
+    "pk": 1,
+    "fields": {
+      "scheme": 1,
+      "version_number": 1,
+      "description": "Provides financial assistance to children and widows of CAPF and RPF/RPSF personnel killed or disabled in duty. Awards 2000 scholarships per year — 1000 for boys and 1000 for girls.",
+      "benefit_amount": "Rs. 2500/month for degree-level, Rs. 1900/month for diploma-level",
+      "applicable_year": "2024-25",
+      "application_open": "2024-08-01",
+      "application_close": "2024-10-31",
+      "official_url": "https://www.mha.gov.in/en/MHA-Scholarships",
+      "status": "published",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "schemes.schemeversion",
+    "pk": 2,
+    "fields": {
+      "scheme": 2,
+      "version_number": 1,
+      "description": "Financial assistance to Scheduled Caste students studying at post-matriculation or post-secondary stage to enable them to complete their education. Covers tuition fees, maintenance allowance, and other charges.",
+      "benefit_amount": "Maintenance allowance Rs. 530–1200/month depending on course level",
+      "applicable_year": "2024-25",
+      "application_open": "2024-07-01",
+      "application_close": "2024-11-30",
+      "official_url": "https://socialjustice.gov.in/schemes/post-matric-scholarship-scheduled-castes",
+      "status": "published",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "schemes.schemeversion",
+    "pk": 3,
+    "fields": {
+      "scheme": 3,
+      "version_number": 1,
+      "description": "Scholarship for meritorious students pursuing regular courses at degree and post-degree level in colleges and universities. Aimed at students whose family income is below Rs 4.5 lakh per annum.",
+      "benefit_amount": "Rs. 10,000/year for undergraduate, Rs. 20,000/year for postgraduate",
+      "applicable_year": "2024-25",
+      "application_open": "2024-09-01",
+      "application_close": "2024-10-31",
+      "official_url": "https://www.education.gov.in/scholarships-education-loan",
+      "status": "published",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+
+  {
+    "model": "schemes.sourcedocument",
+    "pk": 1,
+    "fields": {
+      "scheme_version": 1,
+      "title": "PM Scholarship Scheme for CAPF — Official Guidelines 2024-25",
+      "official_url": "https://www.mha.gov.in/sites/default/files/PMSS-Guidelines.pdf",
+      "retrieval_date": "2026-01-01",
+      "verified_date": "2026-01-01"
+    }
+  },
+  {
+    "model": "schemes.sourcedocument",
+    "pk": 2,
+    "fields": {
+      "scheme_version": 2,
+      "title": "Post Matric Scholarship for SC Students — Scheme Guidelines 2024-25",
+      "official_url": "https://socialjustice.gov.in/schemes/post-matric-scholarship-sc",
+      "retrieval_date": "2026-01-01",
+      "verified_date": "2026-01-01"
+    }
+  },
+  {
+    "model": "schemes.sourcedocument",
+    "pk": 3,
+    "fields": {
+      "scheme_version": 3,
+      "title": "Central Sector Scheme of Scholarships — Guidelines 2024-25",
+      "official_url": "https://scholarships.gov.in/documents/CSS-Guidelines-2024-25.pdf",
+      "retrieval_date": "2026-01-01",
+      "verified_date": "2026-01-01"
+    }
+  },
+
+  {
+    "model": "schemes.sourcepassage",
+    "pk": 1,
+    "fields": {
+      "source_document": 1,
+      "text": "The scholarship is admissible to the children/wards of CAPF (Central Armed Police Forces) and Assam Rifles and RPF/RPSF personnel who were killed or disabled in duty.",
+      "section_reference": "Section 2 — Eligibility Criteria"
+    }
+  },
+  {
+    "model": "schemes.sourcepassage",
+    "pk": 2,
+    "fields": {
+      "source_document": 1,
+      "text": "The candidate should not be more than 25 years of age and should be enrolled in first year of a degree or diploma course.",
+      "section_reference": "Section 2 — Eligibility Criteria"
+    }
+  },
+  {
+    "model": "schemes.sourcepassage",
+    "pk": 3,
+    "fields": {
+      "source_document": 2,
+      "text": "The scholarship is open to students belonging to Scheduled Castes as defined under Article 341 of the Constitution of India.",
+      "section_reference": "Para 3 — Eligibility"
+    }
+  },
+  {
+    "model": "schemes.sourcepassage",
+    "pk": 4,
+    "fields": {
+      "source_document": 2,
+      "text": "Annual income of parents/guardians of the student beneficiary from all sources should not exceed Rs. 2.5 lakh.",
+      "section_reference": "Para 3 — Eligibility"
+    }
+  },
+  {
+    "model": "schemes.sourcepassage",
+    "pk": 5,
+    "fields": {
+      "source_document": 3,
+      "text": "Family income from all sources should not exceed Rs. 4.5 lakh per annum.",
+      "section_reference": "Para 4 — Eligibility Conditions"
+    }
+  },
+  {
+    "model": "schemes.sourcepassage",
+    "pk": 6,
+    "fields": {
+      "source_document": 3,
+      "text": "The student should be in the age group of 18 to 25 years at the time of application.",
+      "section_reference": "Para 4 — Eligibility Conditions"
+    }
+  },
+
+  {
+    "model": "schemes.eligibilityrule",
+    "pk": 1,
+    "fields": {
+      "scheme_version": 1,
+      "field": "parent_service",
+      "operator": "equals",
+      "value": "CAPF",
+      "explanation": "Only for children of CAPF, Assam Rifles, RPF or RPSF personnel killed or disabled in duty",
+      "source_passage": 1
+    }
+  },
+  {
+    "model": "schemes.eligibilityrule",
+    "pk": 2,
+    "fields": {
+      "scheme_version": 1,
+      "field": "education_level",
+      "operator": "in",
+      "value": "graduation,postgraduation,diploma",
+      "explanation": "Candidate must be enrolled in first year of a degree or diploma course",
+      "source_passage": 2
+    }
+  },
+  {
+    "model": "schemes.eligibilityrule",
+    "pk": 3,
+    "fields": {
+      "scheme_version": 1,
+      "field": "age",
+      "operator": "lte",
+      "value": "25",
+      "explanation": "Candidate should not be more than 25 years of age",
+      "source_passage": 2
+    }
+  },
+  {
+    "model": "schemes.eligibilityrule",
+    "pk": 4,
+    "fields": {
+      "scheme_version": 2,
+      "field": "caste_category",
+      "operator": "equals",
+      "value": "SC",
+      "explanation": "Scheme is exclusively for students belonging to Scheduled Castes as per Article 341 of the Constitution",
+      "source_passage": 3
+    }
+  },
+  {
+    "model": "schemes.eligibilityrule",
+    "pk": 5,
+    "fields": {
+      "scheme_version": 2,
+      "field": "annual_income",
+      "operator": "lte",
+      "value": "250000",
+      "explanation": "Annual income of parents/guardians from all sources should not exceed Rs. 2.5 lakh",
+      "source_passage": 4
+    }
+  },
+  {
+    "model": "schemes.eligibilityrule",
+    "pk": 6,
+    "fields": {
+      "scheme_version": 3,
+      "field": "annual_income",
+      "operator": "lte",
+      "value": "450000",
+      "explanation": "Family income from all sources should not exceed Rs. 4.5 lakh per annum",
+      "source_passage": 5
+    }
+  },
+  {
+    "model": "schemes.eligibilityrule",
+    "pk": 7,
+    "fields": {
+      "scheme_version": 3,
+      "field": "age",
+      "operator": "lte",
+      "value": "25",
+      "explanation": "Student should be in the age group of 18 to 25 years",
+      "source_passage": 6
+    }
+  },
+
+  {
+    "model": "schemes.requireddocument",
+    "pk": 1,
+    "fields": {
+      "scheme_version": 1,
+      "name": "Bonafide Certificate from Institution",
+      "when_required": "At time of application"
+    }
+  },
+  {
+    "model": "schemes.requireddocument",
+    "pk": 2,
+    "fields": {
+      "scheme_version": 1,
+      "name": "Service/Ex-service Certificate of Parent from competent authority",
+      "when_required": "At time of application"
+    }
+  },
+  {
+    "model": "schemes.requireddocument",
+    "pk": 3,
+    "fields": {
+      "scheme_version": 2,
+      "name": "Caste Certificate issued by competent authority",
+      "when_required": "At time of application"
+    }
+  },
+  {
+    "model": "schemes.requireddocument",
+    "pk": 4,
+    "fields": {
+      "scheme_version": 2,
+      "name": "Income Certificate from competent authority (not older than 1 year)",
+      "when_required": "At time of application"
+    }
+  },
+  {
+    "model": "schemes.requireddocument",
+    "pk": 5,
+    "fields": {
+      "scheme_version": 3,
+      "name": "Income Certificate from competent authority",
+      "when_required": "At time of application"
+    }
+  },
+  {
+    "model": "schemes.requireddocument",
+    "pk": 6,
+    "fields": {
+      "scheme_version": 3,
+      "name": "Mark sheet of qualifying examination (minimum 80% or above 80th percentile)",
+      "when_required": "At time of application"
+    }
+  }
+]

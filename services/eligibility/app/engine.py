@@ -108,7 +108,7 @@ def evaluate_scheme(
     results = [c.result for c in conditions]
 
     if "fail" in results:
-        outcome = "appears_ineligible"
+        outcome = "appears_non_eligible"
     elif "unknown" in results:
         outcome = "more_information_needed"
     else:

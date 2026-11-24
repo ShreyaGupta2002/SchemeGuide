@@ -1,335 +1,37 @@
-# SchemeGuide — Project Progress & Handoff Document
+# SchemeGuide — Handoff Document
+
+Last updated: November 2026
+
+---
 
 ## What is SchemeGuide?
 
-A microservices web application that helps students and citizens discover government scholarships and schemes, check their eligibility, and understand the results.
+An open-source web application that helps Indian students and citizens discover government scholarships, check eligibility against official published rules, and get plain-language explanations. Every eligibility rule is sourced from an official government document — no guessing, no AI deciding eligibility.
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ```
-[React Frontend :3000]
-        |
-   [Nginx Gateway :80]  ← single public entry point
-        |
-   ┌────┬────┬────┐
-   │    │    │    │
-Catalog  Eligibility  Feedback
-(Django) (FastAPI)   (FastAPI)
- :8001    :8002       :8004
-   │                    │
-Postgres             Postgres
-catalog_db           feedback_db
+[React Frontend]
+      |
+ [Nginx :80]  ← single public entry point
+      |
+  ┌───┼──────┬──────┐
+  │   │      │      │
+Catalog  Eligibility  Assistant  Feedback
+(Django)  (FastAPI)   (FastAPI)  (FastAPI)
+ :8001     :8002       :8003      :8004
+  │                               │
+Postgres                       Postgres
+catalog_db                     feedback_db
 ```
+
+All services run in Docker. Nginx is the only port exposed publicly (port 80). Services talk to each other by container name on the Docker internal network.
 
 ---
 
-## What Has Been Built
-
-### 1. Catalog Service — `services/catalog/` (Django + DRF)
-**Status: Complete and working**
-
-Owns all scheme data. Has a Django Admin UI for adding/managing schemes.
-
-**Files:**
-- `manage.py` — Django entry point
-- `catalog_service/settings.py` — DB config (SQLite locally, PostgreSQL in Docker)
-- `catalog_service/urls.py` — Root URL routing
-- `catalog_service/wsgi.py` — WSGI entry point
-- `schemes/models.py` — 7 database models
-- `schemes/admin.py` — Admin UI with publish/review actions
-- `schemes/serializers.py` — JSON response format
-- `schemes/views.py` — API logic
-- `schemes/urls.py` — URL routes
-- `schemes/migrations/` — Database migration files
-- `requirements.txt` — Python dependencies
-- `Dockerfile` — Container config
-
-**Database Models:**
-```
-Scheme              → name, department, jurisdiction, state
-SchemeVersion       → description, benefit_amount, applicable_year,
-                      application_open/close, official_url, status (draft/reviewed/published)
-EligibilityRule     → field, operator, value, explanation
-SourceDocument      → title, official_url, retrieval_date
-SourcePassage       → text, section_reference
-RequiredDocument    → name, when_required
-ReviewRecord        → reviewer, decision, comments
-```
-
-**API Endpoints:**
-```
-GET  /api/v1/schemes/        → list all published schemes
-GET  /api/v1/schemes/{id}/   → scheme detail with rules and sources
-```
-
-**How to run locally (without Docker):**
-```bash
-cd services/catalog
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py makemigrations schemes
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver 8001
-```
-Admin: `http://localhost:8001/admin/`
-API: `http://localhost:8001/api/v1/schemes/`
-
----
-
-### 2. Eligibility Service — `services/eligibility/` (FastAPI)
-**Status: Complete and working**
-
-Stateless service — fetches rules from Catalog, evaluates them against user profile, returns outcome.
-
-**Files:**
-- `main.py` — FastAPI app entry point
-- `app/models.py` — Pydantic schemas (ProfileInput, MatchRequest, MatchResponse)
-- `app/catalog_client.py` — HTTP client to fetch rules from Catalog service
-- `app/engine.py` — Core eligibility logic (evaluate rules)
-- `app/router.py` — POST /api/v1/matches endpoint
-- `requirements.txt` — Python dependencies
-- `Dockerfile` — Container config
-
-**API Endpoint:**
-```
-POST /api/v1/matches
-Body: {
-  "profile": {
-    "state": "UP",
-    "annual_income": 150000,
-    "education_level": "graduation",
-    "caste_category": "SC",
-    "gender": "female",
-    "age": 20,
-    "parent_service": "CAPF"
-  }
-}
-Response: {
-  "results": [
-    {
-      "scheme_id": 1,
-      "scheme_name": "PM Scholarship...",
-      "scheme_version_id": 1,
-      "outcome": "appears_eligible",  // or "appears_ineligible" or "more_information_needed"
-      "conditions": [...]
-    }
-  ]
-}
-```
-
-**Engine logic (engine.py):**
-- Supported operators: `equals`, `not_equals`, `in`, `not_in`, `gte`, `lte`, `gt`, `lt`
-- Rule result: `pass`, `fail`, or `unknown` (if field not provided)
-- Scheme outcome: if any rule fails → `appears_ineligible`, if any unknown → `more_information_needed`, all pass → `appears_eligible`
-
-**How to run locally:**
-```bash
-cd services/eligibility
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8002
-```
-Docs: `http://localhost:8002/docs`
-Note: Catalog service must also be running.
-
----
-
-### 3. Feedback Service — `services/feedback/` (FastAPI + SQLAlchemy)
-**Status: Complete and working**
-
-Lets users report incorrect scheme information. Stores feedback in PostgreSQL.
-
-**Files:**
-- `main.py` — FastAPI app entry point
-- `app/database.py` — SQLAlchemy DB connection (SQLite locally, PostgreSQL in Docker)
-- `app/models.py` — FeedbackRecord SQLAlchemy model + Pydantic schemas
-- `app/router.py` — CRUD endpoints
-- `requirements.txt` — Python dependencies
-- `Dockerfile` — Container config
-
-**API Endpoints:**
-```
-POST   /api/v1/feedback              → submit feedback
-GET    /api/v1/feedback              → list all feedback
-GET    /api/v1/feedback/{id}         → get one feedback
-PATCH  /api/v1/feedback/{id}/resolve → mark as resolved
-```
-
-**How to run locally:**
-```bash
-cd services/feedback
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8004
-```
-Docs: `http://localhost:8004/docs`
-
----
-
-### 4. Docker Compose + Nginx Gateway — `infra/` and `gateway/`
-**Status: Complete and working**
-
-Runs all services together in containers with a single command.
-
-**Files:**
-- `infra/compose.yaml` — Docker Compose config
-- `infra/init_db.sql` — Creates ai_db and feedback_db on first PostgreSQL start
-- `gateway/nginx.conf` — Nginx routing rules
-- `gateway/Dockerfile` — Nginx container
-
-**How to run everything together:**
-```bash
-cd infra
-docker compose up --build
-```
-
-**URL routing through Nginx:**
-```
-localhost/api/v1/schemes/*   → catalog:8001
-localhost/api/v1/matches     → eligibility:8002
-localhost/api/v1/feedback    → feedback:8004
-localhost/admin/             → catalog:8001
-localhost/static/            → catalog:8001
-```
-
-**Create superuser in Docker:**
-```bash
-cd infra
-docker compose exec catalog python manage.py createsuperuser
-```
-
----
-
-### 5. React Frontend — `frontend/`
-**Status: Partially complete — UI built, needs testing with live data**
-
-**Files built:**
-- `src/api/client.js` — API calls (fetchSchemes, checkEligibility, submitFeedback)
-- `src/components/SchemeCard.jsx` — Scheme card for Browse page
-- `src/components/ProfileForm.jsx` — User profile input form
-- `src/components/MatchResults.jsx` — Eligibility results display
-- `src/components/ConditionRow.jsx` — One row per eligibility rule result
-- `src/components/FeedbackForm.jsx` — Report incorrect info form
-- `src/pages/HomePage.jsx` — Landing page
-- `src/pages/SchemesPage.jsx` — Browse all schemes
-- `src/pages/MatchPage.jsx` — Check eligibility page
-- `src/App.js` — Router + Navbar
-
-**How to run:**
-```bash
-cd frontend
-npm install
-npm start
-```
-Opens at `http://localhost:3000`
-
-**Pages:**
-```
-/          → Home page with hero section
-/schemes   → Browse all published schemes
-/check     → Check eligibility form
-```
-
-**Proxy config** (`package.json`):
-```json
-"proxy": "http://localhost:80"
-```
-This routes all `/api/*` calls through Nginx gateway.
-
----
-
-## What is NOT Done Yet
-
-```
-❌ AI Assistant Service     → services/assistant/ (folder exists, no code)
-❌ Tests                    → pytest for each service
-❌ GitHub Actions CI        → .github/workflows/ (folders exist, no yml files)
-❌ Docs                     → docs/ folder exists but empty
-❌ Sample data fixture      → need to add schemes via admin or fixture file
-```
-
----
-
-## What Still Needs to Be Done
-
-### Next Priority: AI Assistant Service — `services/assistant/`
-
-This service:
-1. Fetches source passages from Catalog
-2. Calls Eligibility service for the evaluation result
-3. Sends question + evidence to LLM (Claude/OpenAI)
-4. Returns plain-language explanation + cited source passage IDs
-
-**Files to create:**
-```
-services/assistant/
-├── Dockerfile
-├── requirements.txt          ← fastapi, uvicorn, httpx, anthropic or openai
-├── main.py
-└── app/
-    ├── catalog_client.py     ← fetch source passages
-    ├── eligibility_client.py ← fetch evaluation result
-    ├── retrieval.py          ← search passages for a question
-    ├── llm_adapter.py        ← call LLM, validate citations
-    └── router.py             ← POST /api/v1/schemes/{id}/questions
-```
-
-**Needs:** An API key — either `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in `.env`
-
-### Then: Tests
-
-```
-services/catalog/tests/test_api.py        → GET /schemes returns only published
-services/eligibility/tests/test_engine.py → boundary value tests for rules
-services/feedback/tests/test_api.py       → submit and list feedback
-```
-
-### Then: GitHub Actions CI
-
-```
-.github/workflows/catalog.yml      → pytest on every PR
-.github/workflows/eligibility.yml  → pytest on every PR
-.github/workflows/integration.yml  → docker compose smoke test
-```
-
-### Then: Docs
-
-```
-docs/proposal.md         → problem statement, team, scope
-docs/architecture.md     → architecture diagram, service responsibilities
-docs/related-work.md     → comparison with existing tools
-docs/data-maintenance.md → how to add a new scheme
-docs/evaluation.md       → test dataset, results
-```
-
----
-
-## Repository Structure
-
-```
-SchemeGuide/
-├── README.md
-├── CONTRIBUTING.md
-├── LICENSE
-├── .env.example
-├── .gitignore
-├── services/
-│   ├── catalog/          ✅ complete
-│   ├── eligibility/      ✅ complete
-│   ├── feedback/         ✅ complete
-│   └── assistant/        ❌ not started
-├── frontend/             ⚠️  UI built, needs testing
-├── gateway/              ✅ complete
-├── infra/                ✅ complete
-├── docs/                 ❌ empty
-├── contracts/openapi/    ❌ empty
-└── .github/workflows/    ❌ empty
-```
-
----
-
-## GitHub Repository
+## Repository
 
 ```
 https://github.com/ShuvechhaNandi/SchemeGuide
@@ -337,34 +39,327 @@ https://github.com/ShuvechhaNandi/SchemeGuide
 
 ---
 
-## Tech Stack
+## Current Status
 
-| Component | Technology |
-|-----------|-----------|
-| Catalog | Django 5.1 + Django REST Framework |
-| Eligibility | FastAPI + Pydantic |
-| Feedback | FastAPI + SQLAlchemy |
-| AI Assistant | FastAPI + anthropic/openai SDK (not built yet) |
-| Frontend | React + React Bootstrap + React Router |
-| Database | PostgreSQL (Docker) / SQLite (local dev) |
-| Gateway | Nginx |
-| Orchestration | Docker Compose |
-| Python version | 3.13 |
-| Node version | 24 |
+| Component | Status | Notes |
+|---|---|---|
+| Catalog service | ✅ Working | Django + DRF, Django Admin with CSS |
+| Eligibility service | ✅ Working | 8 operators, 35 unit tests passing |
+| AI Assistant service | ✅ Working | Groq API (httpx), needs GROQ_API_KEY |
+| Feedback service | ✅ Working | SQLAlchemy + PostgreSQL |
+| React frontend | ✅ Working | Browse, eligibility check, AI explain button |
+| Docker Compose | ✅ Working | All 6 services orchestrated |
+| Sample data fixture | ✅ Working | 3 real Indian govt schemes auto-loaded on startup |
+| Tests | ⚠️  Partial | 35 engine unit tests; no API or integration tests |
+| GitHub Actions CI | ❌ Not started | No CI workflows |
 
 ---
 
-## Important Notes for Handoff
+## Services
 
-1. **Database is fresh on every `docker compose down -v`** — schemes need to be re-added via admin
-2. **Locally vs Docker** — local runs use SQLite, Docker uses PostgreSQL
-3. **Admin credentials** — created via `docker compose exec catalog python manage.py createsuperuser`
-4. **Frontend proxy** — `package.json` has `"proxy": "http://localhost:80"` so API calls go through Nginx
-5. **Git config** — set `git config commit.gpgsign false` to avoid SAP GPG key popup
-6. **Port map:**
-   - `localhost:3000` → React dev server
-   - `localhost:80` → Nginx (all API calls)
-   - `localhost:8001` → Catalog (direct, local only)
-   - `localhost:8002` → Eligibility (direct, local only)
-   - `localhost:8004` → Feedback (direct, local only)
-   - `localhost:5432` → PostgreSQL (direct, local only)
+### 1. Catalog — `services/catalog/` (Django + DRF)
+
+Owns all scheme data. Exposes a REST API and Django Admin for data management.
+
+**Models:**
+```
+Scheme              name, department, jurisdiction, state
+SchemeVersion       description, benefit_amount, applicable_year,
+                    application_open/close, official_url,
+                    status (draft → reviewed → published)
+EligibilityRule     field, operator, value, explanation, source_passage
+SourceDocument      title, official_url, retrieval_date
+SourcePassage       text, section_reference
+RequiredDocument    name, when_required
+ReviewRecord        reviewer, decision, comments
+```
+
+**API:**
+```
+GET  /api/v1/schemes/        list all published schemes (with latest_version)
+GET  /api/v1/schemes/{id}/   scheme detail with rules and sources
+```
+
+**Key details:**
+- WhiteNoise middleware serves Django static files (admin CSS/JS) through gunicorn — no separate static file server needed
+- `collectstatic` runs automatically on container startup
+- Fixtures at `fixtures/sample_schemes.json` are loaded automatically via `loaddata` on startup
+- Status workflow: contributors add data as `draft`, admin promotes to `published` via Django Admin
+
+**Run the startup command:**
+```bash
+python manage.py migrate
+python manage.py loaddata fixtures/sample_schemes.json || true
+python manage.py collectstatic --noinput
+gunicorn catalog_service.wsgi:application --bind 0.0.0.0:8001
+```
+
+---
+
+### 2. Eligibility — `services/eligibility/` (FastAPI)
+
+Stateless service. Fetches published rules from Catalog, evaluates them against a user profile, returns structured results.
+
+**API:**
+```
+POST /api/v1/matches
+Body:  { "profile": { "caste_category": "SC", "annual_income": 200000, ... } }
+Response: { "results": [ { "scheme_id": 1, "outcome": "appears_eligible", "conditions": [...] } ] }
+```
+
+**Outcomes:**
+- `appears_eligible` — all rules pass
+- `appears_non_eligible` — at least one rule fails
+- `more_information_needed` — no failures but some fields were not provided
+
+**Supported operators:** `equals`, `not_equals`, `in`, `not_in`, `gte`, `lte`, `gt`, `lt`
+
+**Rule result per condition:** `pass`, `fail`, or `unknown` (when user didn't provide that field)
+
+**Key rule:** a `fail` always beats `unknown` — a definite disqualifier wins even if other fields are missing.
+
+**Tests (35 passing):**
+```bash
+cd services/eligibility
+python3 -m venv .venv && .venv/bin/pip install pytest pydantic
+.venv/bin/python -m pytest tests/ -v
+```
+
+---
+
+### 3. AI Assistant — `services/assistant/` (FastAPI + Groq)
+
+Takes a match result and explains it to the user in plain language.
+
+**API:**
+```
+POST /api/v1/assistant/explain
+Body: {
+  "scheme_id": 1,
+  "scheme_name": "...",
+  "outcome": "appears_non_eligible",
+  "conditions": [ { "field": "caste_category", "result": "fail", "explanation": "..." } ],
+  "profile": { "caste_category": "OBC", ... }
+}
+Response: { "scheme_id": 1, "explanation": "You are not eligible because..." }
+```
+
+**How it works:**
+1. Fetches the scheme description from Catalog
+2. Builds a prompt with the scheme, the per-condition results, and the user profile
+3. Calls the Groq API (`api.groq.com/openai/v1/chat/completions`) via `httpx`
+4. Returns 2–3 plain-language sentences
+
+**Configuration:**
+```
+GROQ_API_KEY=gsk_...                  # required — free Groq API key
+GROQ_MODEL=openai/gpt-oss-20b         # optional override (default: llama-3.1-8b-instant)
+```
+
+**Get a free Groq key:** console.groq.com → API Keys → Create API Key (no credit card)
+
+**Why Groq instead of HuggingFace Inference API:**
+`api-inference.huggingface.co` is blocked on some corporate/institutional networks. Groq's `api.groq.com` is not. The integration uses `httpx` directly — no extra SDK dependency.
+
+---
+
+### 4. Feedback — `services/feedback/` (FastAPI + SQLAlchemy)
+
+Lets users report incorrect or outdated scheme information.
+
+**API:**
+```
+POST   /api/v1/feedback              submit feedback
+GET    /api/v1/feedback              list all feedback
+GET    /api/v1/feedback/{id}         get one entry
+PATCH  /api/v1/feedback/{id}/resolve mark resolved
+```
+
+---
+
+### 5. Frontend — `frontend/` (React + Vite)
+
+**Pages:**
+```
+/          Home — hero, "how it works", transparency note
+/schemes   Browse all published schemes (SchemeCard grid)
+/check     Eligibility check — ProfileForm + MatchResults side by side
+```
+
+**Components:**
+```
+SchemeCard.jsx      scheme card with official link button
+ProfileForm.jsx     7-field form (all optional)
+MatchResults.jsx    ordered results (eligible first), summary badges
+ConditionRow.jsx    one rule per row — pass/fail/unknown with colour
+FeedbackForm.jsx    modal report form
+```
+
+**API calls** (`src/api/client.js`):
+```
+fetchSchemes()           GET  /api/v1/schemes/
+checkEligibility(p)      POST /api/v1/matches
+submitFeedback(d)        POST /api/v1/feedback
+explainResult(d)         POST /api/v1/assistant/explain
+```
+
+**Local dev:** `npm run dev` — Vite proxies `/api` to `http://localhost:80` (Nginx)
+**Docker:** multi-stage build — Node builds to `dist/`, Nginx serves static files
+
+---
+
+### 6. Infrastructure — `infra/` and `gateway/`
+
+**compose.yaml services:**
+```
+db          postgres:16 — single server, 3 databases (catalog_db, feedback_db, ai_db)
+catalog     Django — port 8001
+eligibility FastAPI — port 8002
+assistant   FastAPI — port 8003
+feedback    FastAPI — port 8004
+frontend    Nginx static — port 80 (internal)
+gateway     Nginx reverse proxy — port 80 (public)
+```
+
+**init_db.sql** creates `feedback_db` and `ai_db` on first PostgreSQL startup (`catalog_db` is created by the POSTGRES_DB env var).
+
+**Nginx routing:**
+```
+/api/v1/schemes    → catalog:8001
+/api/v1/matches    → eligibility:8002
+/api/v1/assistant  → assistant:8003
+/api/v1/feedback   → feedback:8004
+/admin/            → catalog:8001
+/static/           → catalog:8001
+/                  → frontend:80
+```
+
+---
+
+## Environment Variables
+
+All secrets live in `.env` (never committed). `.env.example` is the template.
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `CATALOG_SECRET_KEY` | catalog | Django secret key |
+| `CATALOG_DEBUG` | catalog | `true` locally, `false` in production |
+| `CATALOG_DATABASE_URL` | catalog | PostgreSQL connection string |
+| `FEEDBACK_DATABASE_URL` | feedback | PostgreSQL connection string |
+| `POSTGRES_USER` | db | Database username |
+| `POSTGRES_PASSWORD` | db | Database password |
+| `POSTGRES_DB` | db | Primary database name |
+| `CATALOG_SERVICE_URL` | eligibility, assistant | `http://catalog:8001` |
+| `ELIGIBILITY_SERVICE_URL` | (future) | `http://eligibility:8002` |
+| `GROQ_API_KEY` | assistant | Free Groq API key — console.groq.com |
+| `GROQ_MODEL` | assistant | Optional model override (default: `llama-3.1-8b-instant`) |
+
+Generate secrets:
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(50))"  # CATALOG_SECRET_KEY
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"  # POSTGRES_PASSWORD
+```
+
+---
+
+## Sample Data
+
+`services/catalog/fixtures/sample_schemes.json` — 3 real Indian government schemes, auto-loaded on every container startup.
+
+| Scheme | Ministry | Official URL |
+|---|---|---|
+| PM Scholarship for CAPF | Ministry of Home Affairs | mha.gov.in/en/MHA-Scholarships |
+| Post Matric Scholarship for SC | Ministry of Social Justice | socialjustice.gov.in |
+| Central Sector Scholarship | Ministry of Education | education.gov.in |
+
+Each scheme has: eligibility rules with operator + value + explanation, source documents and passages (official quotes), required documents, and published status.
+
+**To add more schemes:** see [data-maintenance.md](data-maintenance.md).
+
+---
+
+## Running Locally (Full Setup)
+
+```bash
+# 1. Start Docker Desktop
+
+# 2. Clone and configure
+git clone https://github.com/ShuvechhaNandi/SchemeGuide.git
+cd SchemeGuide
+cp .env.example .env
+# edit .env — fill in generated secrets
+
+# 3. Start everything
+docker compose -f infra/compose.yaml --env-file .env up --build
+
+# 4. Create admin user (in a new terminal)
+docker compose -f infra/compose.yaml --env-file .env exec catalog \
+  python manage.py createsuperuser
+
+# 5. Open http://localhost
+```
+
+**Wipe and reset:**
+```bash
+docker compose -f infra/compose.yaml --env-file .env down -v
+docker compose -f infra/compose.yaml --env-file .env up --build
+# re-run createsuperuser
+```
+
+**Run eligibility tests:**
+```bash
+cd services/eligibility
+python3 -m venv .venv && .venv/bin/pip install pytest pydantic
+.venv/bin/python -m pytest tests/ -v
+```
+
+---
+
+## Known Issues and Gotchas
+
+| Issue | Cause | Fix |
+|---|---|---|
+| `--env-file .env` required (or use `make`) | compose.yaml is in `infra/`, not root — Docker reads `.env` relative to the compose file location | use `make up` from repo root, or pass `--env-file .env` explicitly |
+| `db`, `eligibility`, `assistant` use `env_file` in compose; `catalog` and `feedback` still use `environment:` substitution | `catalog` maps `CATALOG_DATABASE_URL` → `DATABASE_URL` and `feedback` maps `FEEDBACK_DATABASE_URL` → `DATABASE_URL` — `env_file` can't rename vars | `make` / `--env-file .env` handles these; a future fix is to rename vars in `.env` to match what each service reads |
+| Healthcheck `role "-d" does not exist` | `${POSTGRES_USER}` in healthcheck was empty at parse time | use `$$POSTGRES_USER` (double dollar = evaluated at runtime inside container) |
+| Admin page has no CSS | gunicorn doesn't serve static files | WhiteNoise middleware added — must rebuild after any catalog change |
+| `api-inference.huggingface.co` DNS blocked on some networks | corporate/institutional networks block this HuggingFace subdomain | switched assistant to Groq (`api.groq.com`), which is not blocked |
+| Port 5432 conflict | Local PostgreSQL occupies the port | db exposed on `5433:5432` in compose.yaml |
+| `npm ci` fails in Docker | No `package-lock.json` in the repo | Dockerfile uses `npm install` |
+
+---
+
+## What Still Needs to Be Done
+
+### High priority
+- **GitHub Actions CI** — pytest on every PR for eligibility and catalog; Docker Compose smoke test
+- **API tests** — `GET /api/v1/schemes/` returns only published; `POST /api/v1/matches` with known fixture data returns expected outcomes
+- **npm lock file** — run `npm install` locally once, commit `package-lock.json`, switch Dockerfile back to `npm ci`
+
+### Medium priority
+- **More sample schemes** — 5–10 schemes is a better demo; contributors can open data PRs
+- **Scheme search/filter** — filter Browse page by state, caste category, education level
+- **Assistant: source citations** — the explanation currently has no citations; link each sentence to the source passage it draws from
+
+### Lower priority
+- **Production hosting** — Oracle Always Free or Fly.io; needs HTTPS, non-debug mode, production secret key
+- **Catalog API tests** — test that draft schemes do not appear in `/api/v1/schemes/`
+- **Feedback admin view** — reviewers should be able to see and resolve feedback from Django Admin, not just the API
+
+---
+
+## Tech Stack
+
+| Component | Technology | Version |
+|---|---|---|
+| Catalog | Django + DRF | 5.1.4 / 3.15.2 |
+| Eligibility | FastAPI + Pydantic | 0.115.5 / 2.10.2 |
+| AI Assistant | FastAPI + httpx (Groq) | 0.115.5 / 0.28.0 |
+| Feedback | FastAPI + SQLAlchemy | 0.115.5 |
+| Frontend | React + Vite + React Bootstrap | 18 / 6 / 2 |
+| Database | PostgreSQL | 16 |
+| Static files | WhiteNoise | 6.8.2 |
+| Gateway | Nginx | alpine |
+| Orchestration | Docker Compose | v2 |
+| Python | 3.13 | |
+| Node | 24 | |

@@ -26,7 +26,7 @@ class SchemeMatchResult(BaseModel):
     scheme_id: int
     scheme_name: str
     scheme_version_id: int
-    outcome: str  # "appears_eligible", "appears_ineligible", "more_information_needed"
+    outcome: str  # "appears_eligible", "appears_non_eligible", "more_information_needed"
     conditions: List[ConditionResult]
 
 
