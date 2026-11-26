@@ -7,7 +7,7 @@ from .models import (
 
 class EligibilityRuleInline(admin.TabularInline):
     model = EligibilityRule
-    extra = 1
+    extra = 3
     fields = ['field', 'operator', 'value', 'explanation', 'source_passage']
 
 
