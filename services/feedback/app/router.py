@@ -1,8 +1,9 @@
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+
 from .database import get_db
-from .models import FeedbackRecord, FeedbackCreate, FeedbackResponse
+from .models import FeedbackCreate, FeedbackRecord, FeedbackResponse
 
 router = APIRouter()
 
@@ -16,8 +17,8 @@ def submit_feedback(payload: FeedbackCreate, db: Session = Depends(get_db)):
     return record
 
 
-@router.get("/feedback", response_model=List[FeedbackResponse])
-def list_feedback(status: str = None, db: Session = Depends(get_db)):
+@router.get("/feedback", response_model=list[FeedbackResponse])
+def list_feedback(status: str | None = None, db: Session = Depends(get_db)):
     query = db.query(FeedbackRecord)
     if status:
         query = query.filter(FeedbackRecord.status == status)

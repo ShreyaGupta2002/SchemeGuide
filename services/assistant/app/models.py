@@ -1,5 +1,5 @@
+
 from pydantic import BaseModel
-from typing import Optional, List
 
 
 class ConditionSummary(BaseModel):
@@ -12,7 +12,7 @@ class ExplainRequest(BaseModel):
     scheme_id: int
     scheme_name: str
     outcome: str        # appears_eligible | appears_non_eligible | more_information_needed
-    conditions: List[ConditionSummary]
+    conditions: list[ConditionSummary]
     profile: dict
 
 

@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from sqlalchemy.sql import func
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel
+from sqlalchemy import Column, DateTime, Integer, String, Text
+from sqlalchemy.sql import func
+
 from .database import Base
 
 
@@ -24,8 +25,8 @@ class FeedbackCreate(BaseModel):
     scheme_version_id: int
     scheme_name: str
     problem_description: str
-    correct_information: Optional[str] = None
-    official_source_url: Optional[str] = None
+    correct_information: str | None = None
+    official_source_url: str | None = None
 
 
 class FeedbackResponse(BaseModel):
@@ -33,8 +34,8 @@ class FeedbackResponse(BaseModel):
     scheme_version_id: int
     scheme_name: str
     problem_description: str
-    correct_information: Optional[str]
-    official_source_url: Optional[str]
+    correct_information: str | None
+    official_source_url: str | None
     status: str
     created_at: datetime
 

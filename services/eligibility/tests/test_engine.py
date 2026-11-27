@@ -1,4 +1,3 @@
-import pytest
 from app.engine import evaluate_rule, evaluate_scheme
 from app.models import ProfileInput
 
