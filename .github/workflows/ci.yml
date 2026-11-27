@@ -3,8 +3,6 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
 
 jobs:
   # ── Detect which paths changed ────────────────────────────────────────────
@@ -21,6 +19,8 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: dorny/paths-filter@v3
         id: filter
@@ -190,31 +190,19 @@ jobs:
   docker-build:
     name: Docker build (${{ matrix.service }})
     runs-on: ubuntu-latest
-    needs: changes
     strategy:
       matrix:
         include:
           - service: catalog
             context: services/catalog
-            changed_output: catalog
           - service: eligibility
             context: services/eligibility
-            changed_output: eligibility
           - service: assistant
             context: services/assistant
-            changed_output: eligibility   # no assistant output; reuse eligibility as proxy
           - service: feedback
             context: services/feedback
-            changed_output: feedback
           - service: frontend
             context: frontend
-            changed_output: frontend
-
-    # Build if this service's files changed, or if this is a push to main
-    # (always build on merge to catch Dockerfile regressions)
-    if: |
-      needs.changes.outputs[matrix.changed_output] == 'true' ||
-      github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
