@@ -1,7 +1,13 @@
 from django.contrib import admin
+
 from .models import (
-    Scheme, SchemeVersion, EligibilityRule,
-    SourceDocument, SourcePassage, RequiredDocument, ReviewRecord
+    EligibilityRule,
+    RequiredDocument,
+    ReviewRecord,
+    Scheme,
+    SchemeVersion,
+    SourceDocument,
+    SourcePassage,
 )
 
 

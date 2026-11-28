@@ -1,12 +1,13 @@
-from typing import Dict, Any, List
-from .models import ConditionResult, SchemeMatchResult, ProfileInput
+from typing import Any
+
+from .models import ConditionResult, ProfileInput, SchemeMatchResult
 
 
 def get_profile_value(profile: ProfileInput, field: str):
     return getattr(profile, field, None)
 
 
-def evaluate_rule(rule: Dict[str, Any], profile: ProfileInput) -> ConditionResult:
+def evaluate_rule(rule: dict[str, Any], profile: ProfileInput) -> ConditionResult:
     field = rule["field"]
     operator = rule["operator"]
     expected_raw = rule["value"]
@@ -90,7 +91,7 @@ def evaluate_scheme(
     scheme_id: int,
     scheme_name: str,
     scheme_version_id: int,
-    rules: List[Dict[str, Any]],
+    rules: list[dict[str, Any]],
     profile: ProfileInput,
 ) -> SchemeMatchResult:
 

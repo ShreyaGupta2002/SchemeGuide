@@ -1,6 +1,6 @@
+from app.router import router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.router import router
 
 app = FastAPI(title="AI Assistant Service", version="1.0.0")
 

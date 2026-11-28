@@ -1,8 +1,9 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .models import Scheme
-from .serializers import SchemeListSerializer, SchemeDetailSerializer
+from .serializers import SchemeDetailSerializer, SchemeListSerializer
 
 
 class SchemeListView(APIView):

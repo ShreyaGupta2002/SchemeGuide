@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from .models import MatchRequest, MatchResponse
+
 from .catalog_client import get_all_published_schemes, get_scheme_with_rules
 from .engine import evaluate_scheme
+from .models import MatchRequest, MatchResponse
 
 router = APIRouter()
 
@@ -22,7 +23,7 @@ async def match_schemes(request: MatchRequest):
             schemes = full_schemes
 
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not reach Catalog service: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Could not reach Catalog service: {e!s}")
 
     results = []
     for scheme in schemes:

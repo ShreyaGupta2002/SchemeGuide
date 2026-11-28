@@ -1,0 +1,7 @@
+[lint]
+ignore = [
+    "BLE001",  # broad Exception catch — intentional in FastAPI 502 handlers
+    "RUF012",  # mutable class attribute — standard Django Meta/admin pattern
+    "B008",    # Depends() in default arg — standard FastAPI dependency injection
+    "EXE001",  # shebang on non-executable — manage.py is run via python, not directly
+]

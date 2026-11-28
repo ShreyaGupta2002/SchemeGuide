@@ -1,9 +1,11 @@
-import os
 import logging
+import os
+
 import httpx
 from fastapi import APIRouter, HTTPException
-from .models import ExplainRequest, ExplainResponse
+
 from .catalog_client import get_scheme_detail
+from .models import ExplainRequest, ExplainResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

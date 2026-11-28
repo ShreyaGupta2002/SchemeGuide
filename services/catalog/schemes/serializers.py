@@ -1,5 +1,13 @@
 from rest_framework import serializers
-from .models import Scheme, SchemeVersion, EligibilityRule, SourcePassage, SourceDocument, RequiredDocument
+
+from .models import (
+    EligibilityRule,
+    RequiredDocument,
+    Scheme,
+    SchemeVersion,
+    SourceDocument,
+    SourcePassage,
+)
 
 
 class SourcePassageSerializer(serializers.ModelSerializer):

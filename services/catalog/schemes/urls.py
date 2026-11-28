@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import SchemeListView, SchemeDetailView
+
+from .views import SchemeDetailView, SchemeListView
 
 urlpatterns = [
     path('schemes/', SchemeListView.as_view(), name='scheme-list'),
